@@ -5,8 +5,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny
-
-# Importiere deine eigenen Models und Serializer
 from ..models import UserProfile
 from .serializers import (
     UserProfileSerializer, 
@@ -30,7 +28,6 @@ class RegistrationView(APIView):
             save_account = serializer.save()
             token, created = Token.objects.get_or_create(user=save_account)
             
-            # Hier passen wir die Antwort auch direkt an dein Frontend an:
             return Response({
                 'token': token.key,
                 'userId': save_account.pk,
@@ -48,19 +45,16 @@ class LoginView(APIView):
         email = request.data.get('email')
         password = request.data.get('password')
 
-        # 1. User anhand der E-Mail suchen
         try:
             user_obj = User.objects.get(email=email)
         except User.DoesNotExist:
             return Response({'error': 'E-Mail nicht gefunden.'}, status=400)
 
-        # 2. Mit dem gefundenen Usernamen und Passwort einloggen
         user = authenticate(username=user_obj.username, password=password)
 
         if user:
             token, created = Token.objects.get_or_create(user=user)
             
-            # Das JSON Paket für dein setAuthCredentials()
             return Response({
                 'token': token.key,
                 'userId': user.pk,
@@ -69,3 +63,8 @@ class LoginView(APIView):
             }, status=200)
         else:
             return Response({'error': 'Falsches Passwort.'}, status=400)
+
+# class LogoutView(APIView):
+#     def post(self, request):
+#         request.auth.delete()
+#         return Response(status=200)

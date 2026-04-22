@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'user_auth_app',
     'tasks_app',
+    'boards_app',
 ]
 
 MIDDLEWARE = [
@@ -127,6 +128,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication', 
+        'rest_framework.authentication.TokenAuthentication',   
     ],
 }

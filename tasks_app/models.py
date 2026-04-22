@@ -30,7 +30,7 @@ class Task(models.Model):
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='userstory')
     
     # Wer hat die Aufgabe erstellt?
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tasks')
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tasks')
     # Wem ist sie zugewiesen? (Mehrere Personen möglich)
     assigned_to = models.ManyToManyField(User, related_name='assigned_tasks', blank=True)
 
