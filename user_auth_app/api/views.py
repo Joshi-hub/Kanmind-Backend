@@ -74,8 +74,3 @@ class LoginView(APIView):
             }, status=200)
         else:
             return Response({'error': 'Falsches Passwort.'}, status=400)
-
-# class LogoutView(APIView):
-#     def post(self, request):
-#         request.auth.delete()
-#         return Response(status=200)

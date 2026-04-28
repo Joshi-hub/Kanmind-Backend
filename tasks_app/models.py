@@ -1,46 +1,45 @@
+from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
+from boards_app.models import Board  
 
 class Task(models.Model):
-    # Definition der Auswahlmöglichkeiten
+    STATUS_CHOICES = [
+        ('to-do', 'To Do'),
+        ('in-progress', 'In Progress'),
+        ('review', 'Review'),
+        ('done', 'Done'),
+    ]
     PRIORITY_CHOICES = [
         ('low', 'Low'),
         ('medium', 'Medium'),
         ('high', 'High'),
-        ('urgent', 'Urgent'),
-    ]
-    STATUS_CHOICES = [
-        ('todo', 'To Do'),
-        ('inprogress', 'In Progress'),
-        ('awaitfeedback', 'Await Feedback'),
-        ('done', 'Done'),
-    ]
-    CATEGORY_CHOICES = [
-        ('userstory', 'User Story'),
-        ('technical', 'Technical'),
-        ('marketing', 'Marketing'),
-        ('design', 'Design'),
     ]
 
-    title = models.CharField(max_length=200)
+    board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name='tasks')
+    title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    due_date = models.DateField(null=True, blank=True)
-    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='todo')
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='userstory')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='to-do')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     
-    # Wer hat die Aufgabe erstellt?
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tasks')
-    # Wem ist sie zugewiesen? (Mehrere Personen möglich)
-    assigned_to = models.ManyToManyField(User, related_name='assigned_tasks', blank=True)
+    # Der Ersteller der Task
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owned_tasks')
+    # Wer die Task bearbeiten soll
+    assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
+    # Wer die Task prüft
+    reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_tasks')
+    
+    due_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
 
-class Subtask(models.Model):
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='subtasks')
-    title = models.CharField(max_length=200)
-    is_done = models.BooleanField(default=False)
+class Comment(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.task.title} - {self.title}"
+        return f"Comment by {self.author.username} on {self.task.title}"
+        

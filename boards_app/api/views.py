@@ -3,9 +3,11 @@ from rest_framework import generics, serializers
 from ..models import Board
 from .serializers import BoardSerializer
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from django.db.models import Q
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.db.models import Q, F
 from user_auth_app.permissions import IsOwnerOrAdmin
+from django.contrib.auth.models import User
+from rest_framework.views import APIView
 
 
 class BoardRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -38,3 +40,22 @@ class UserBoardListView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return Board.objects.filter(owner=user)
+    
+class EmailCheckView(APIView):
+    permission_classes = [IsAuthenticated] 
+
+    def get(self, request):
+        email = request.query_params.get('email')
+        if not email:
+            return Response({"error": "Email missing"}, status=400)
+        
+        try:
+            user = User.objects.get(email=email)
+            return Response({
+                "id": user.id,
+                "email": user.email,
+                "fullname": f"{user.first_name} {user.last_name}".strip() or user.username
+            }, status=200)
+        except User.DoesNotExist:
+            return Response({"error": "Email nicht gefunden"}, status=404)
+    
