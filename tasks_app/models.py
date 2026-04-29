@@ -1,8 +1,17 @@
+# 1. Standardbibliothek
+# (keine)
+
+# 2. Drittanbieter
 from django.conf import settings
 from django.db import models
-from boards_app.models import Board  
+
+# 3. Lokale Importe
+from boards_app.models import Board
+
 
 class Task(models.Model):
+    """Eine einzelne Aufgabe innerhalb eines Boards."""
+
     STATUS_CHOICES = [
         ('to-do', 'To Do'),
         ('in-progress', 'In Progress'),
@@ -20,26 +29,53 @@ class Task(models.Model):
     description = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='to-do')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
-    
-    # Der Ersteller der Task
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owned_tasks')
-    # Wer die Task bearbeiten soll
-    assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
-    # Wer die Task prüft
-    reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_tasks')
-    
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='owned_tasks'
+    )
+    assignee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_tasks'
+    )
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_tasks'
+    )
     due_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Task'
+        verbose_name_plural = 'Tasks'
+        ordering = ['due_date', 'priority']
 
     def __str__(self):
         return self.title
 
+
 class Comment(models.Model):
+    """Ein Kommentar zu einer Task."""
+
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='comments')
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        verbose_name = 'Comment'
+        verbose_name_plural = 'Comments'
+        ordering = ['created_at']
+
     def __str__(self):
-        return f"Comment by {self.author.username} on {self.task.title}"
-        
+        return f'Comment by {self.author.get_full_name()} on "{self.task.title}"'

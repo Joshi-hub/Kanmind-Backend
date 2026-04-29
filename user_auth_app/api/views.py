@@ -1,19 +1,31 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework import generics
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from ..models import UserProfile
-from .serializers import (
-    UserProfileSerializer, 
-    RegistrationSerializer
-)
+from .serializers import RegistrationSerializer, UserProfileSerializer
+
 
 def get_safe_fullname(user_obj):
+    """Gibt immer einen Fullname mit zwei Wörtern zurück (für JS-Initialen)."""
     name = f"{user_obj.first_name} {user_obj.last_name}".strip() or user_obj.username
-    return name if " " in name else f"{name} {name}"
+    return name if ' ' in name else f"{name} {name}"
+
+
+def build_auth_response(user, status_code):
+    """Erstellt die Standard-Auth-Antwort mit Token und User-Infos."""
+    token, _ = Token.objects.get_or_create(user=user)
+    return Response({
+        'token': token.key,
+        'fullname': get_safe_fullname(user),
+        'email': user.email,
+        'user_id': user.pk,
+        'message': 'User created successfully.'
+    }, status=status_code)
+
 
 class UserProfileList(generics.ListCreateAPIView):
     queryset = UserProfile.objects.all()
@@ -25,32 +37,17 @@ class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
 
 class RegistrationView(APIView):
     permission_classes = [AllowAny]
-    
+
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
-            save_account = serializer.save()
-            token, created = Token.objects.get_or_create(user=save_account)
-            
-            raw_name = f"{save_account.first_name} {save_account.last_name}".strip()
-            name_parts = raw_name.split()
-            if len(name_parts) == 1:
-                safe_fullname = f"{name_parts[0]} {name_parts[0]}"
-            else:
-                safe_fullname = raw_name
-            
-            return Response({
-                'token': token.key,
-                'fullname': safe_fullname,
-                'email': save_account.email,
-                'user_id': save_account.pk 
-            }, status=201) 
-        
+            account = serializer.save()
+            return build_auth_response(account, 201)
         return Response(serializer.errors, status=400)
 
 
 class LoginView(APIView):
-    permission_classes = [AllowAny] 
+    permission_classes = [AllowAny]
 
     def post(self, request):
         email = request.data.get('email')
@@ -62,15 +59,6 @@ class LoginView(APIView):
             return Response({'error': 'E-Mail nicht gefunden.'}, status=400)
 
         user = authenticate(username=user_obj.username, password=password)
-
         if user:
-            token, created = Token.objects.get_or_create(user=user)
-            
-            return Response({
-                'token': token.key,
-                'fullname': get_safe_fullname(user),
-                'email': user.email,
-                'user_id': user.pk  
-            }, status=200)
-        else:
-            return Response({'error': 'Falsches Passwort.'}, status=400)
+            return build_auth_response(user, 200)
+        return Response({'error': 'Falsches Passwort.'}, status=400)
