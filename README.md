@@ -9,12 +9,26 @@ A RESTful API backend for KanMind – a Kanban-style project management applicat
 - Django REST Framework
 - SQLite (development)
 
+## Project Structure
+
+```
+kanmind_backend/
+├── core/               # Project settings, root URLs, wsgi
+├── user_auth_app/      # Registration, login, user profiles
+│   └── api/            # serializers, views, urls, permissions
+├── boards_app/         # Board management
+│   └── api/
+├── tasks_app/          # Task & comment management
+│   └── api/
+└── requirements.txt
+```
+
 ## Getting Started
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Joshi-hub/Kanmind-Backend
+git clone <your-repo-url>
 cd kanmind_backend
 ```
 
