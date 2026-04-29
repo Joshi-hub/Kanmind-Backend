@@ -2,11 +2,25 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from ..models import UserProfile
 
+# --- NEU: Der Serializer für die Initialen-Anzeige ---
+class UserShortSerializer(serializers.ModelSerializer):
+    fullname = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'fullname']
+
+    def get_fullname(self, obj):
+        name = f"{obj.first_name} {obj.last_name}".strip() or obj.username
+        if " " not in name:
+            return f"{name} {name}"
+        return name
+
+# --- DEINE BESTEHENDEN SERIALIZER ---
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['user', 'bio', 'location']
-
 
 class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -18,14 +32,15 @@ class RegistrationSerializer(serializers.ModelSerializer):
         fields = ['email', 'password', 'repeated_password', 'fullname']
         extra_kwargs = {'password': {'write_only': True}}
 
+    def validate(self, data):
+        if data.get('password') != data.get('repeated_password'):
+            raise serializers.ValidationError({'repeated_password': 'Passwords must match.'})
+        return data
+
     def save(self):
         pw = self.validated_data['password']
-        repeated_password = self.validated_data['repeated_password']
         fullname = self.validated_data['fullname']
         email = self.validated_data['email']
-
-        if pw != repeated_password:
-            raise serializers.ValidationError({'password': 'Passwords must match.'})
 
         name_parts = fullname.strip().split(" ", 1)
         first_name = name_parts[0]
@@ -53,5 +68,4 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
-    password = serializers.CharField()
-    
+    password = serializers.CharField(write_only=True) # Hier habe ich das Passwort-Feld noch ergänzt!

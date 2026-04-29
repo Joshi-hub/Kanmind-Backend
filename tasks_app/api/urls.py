@@ -1,10 +1,11 @@
 from django.urls import path
 from .views import (
-    TaskListCreateView, 
-    TaskDetailView, 
-    AssignedToMeTaskListView, 
+    TaskListCreateView,
+    TaskDetailView,
+    AssignedToMeTaskListView,
     ReviewingTaskListView,
-    TaskCommentListCreateView
+    TaskCommentListCreateView,
+    CommentDestroyView,
 )
 
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path('reviewing/', ReviewingTaskListView.as_view(), name='tasks-reviewing'),
     path('<int:pk>/', TaskDetailView.as_view(), name='task-detail'),
     path('<int:task_id>/comments/', TaskCommentListCreateView.as_view(), name='task-comments'),
+    path('<int:task_id>/comments/<int:comment_id>/', CommentDestroyView.as_view(), name='task-comment-delete'),
 ]

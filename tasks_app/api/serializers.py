@@ -1,25 +1,29 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from ..models import Task, Comment
+from user_auth_app.api.serializers import UserShortSerializer
 
 User = get_user_model()
 
-class UserShortSerializer(serializers.ModelSerializer):
-    fullname = serializers.CharField(source='get_full_name', read_only=True) 
-    class Meta:
-        model = User
-        fields = ['id', 'email', 'fullname']
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.ReadOnlyField(source='author.get_full_name')
+    author = serializers.SerializerMethodField()
     class Meta:
         model = Comment
         fields = ['id', 'created_at', 'author', 'content']
 
+    def get_author(self, obj):
+        name = f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+        if " " not in name:
+            return f"{name} {name}"
+        return name
+
+
 class TaskSerializer(serializers.ModelSerializer):
     assignee = UserShortSerializer(read_only=True)
     reviewer = UserShortSerializer(read_only=True)
-    # IDs für POST/PATCH Anfragen
+    owner = UserShortSerializer(read_only=True)
+
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), source='assignee', write_only=True, required=False, allow_null=True
     )
@@ -31,8 +35,9 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = [
-            'id', 'board', 'title', 'description', 'status', 'priority', 
-            'assignee', 'reviewer', 'assignee_id', 'reviewer_id', 
+            'id', 'board', 'title', 'description', 'status', 'priority',
+            'assignee', 'reviewer', 'owner',
+            'assignee_id', 'reviewer_id',
             'due_date', 'comments_count'
         ]
         read_only_fields = ['owner']
