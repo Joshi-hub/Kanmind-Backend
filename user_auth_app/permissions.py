@@ -1,18 +1,13 @@
 from rest_framework import permissions
-
+ 
 class IsOwnerOrAdmin(permissions.BasePermission):
-    """
-    Erlaubt nur dem Besitzer (owner) oder einem Admin das Bearbeiten/Löschen.
-    Jeder darf die Daten ansehen (GET).
-    """
+    """Allow write access only to the object owner or a superuser admin."""
+ 
     def has_object_permission(self, request, view, obj):
-        # Lesezugriff ist für jeden erlaubt (GET, HEAD, OPTIONS)
+        """Grant read access to all; write access only to owner or admin."""
+        
         if request.method in permissions.SAFE_METHODS:
             return True
-        
-        # Schreibzugriff (PUT, PATCH, DELETE)
-        # Prüfe, ob der User Admin ist oder ob ihm das Objekt gehört
-        is_owner = bool(obj.owner == request.user)
-        is_admin = bool(request.user and request.user.is_superuser)
-        
+        is_owner = obj.owner == request.user
+        is_admin = request.user and request.user.is_superuser
         return is_owner or is_admin

@@ -10,35 +10,42 @@ from .serializers import RegistrationSerializer, UserProfileSerializer
 
 
 def get_safe_fullname(user_obj):
-    """Gibt immer einen Fullname mit zwei Wörtern zurück (für JS-Initialen)."""
+    """Return a full name guaranteed to have two words for JS initials rendering."""
     name = f"{user_obj.first_name} {user_obj.last_name}".strip() or user_obj.username
     return name if ' ' in name else f"{name} {name}"
 
 
 def build_auth_response(user, status_code):
-    """Erstellt die Standard-Auth-Antwort mit Token und User-Infos."""
+    """Build the standard authentication response with token and user data."""
     token, _ = Token.objects.get_or_create(user=user)
     return Response({
         'token': token.key,
         'fullname': get_safe_fullname(user),
         'email': user.email,
         'user_id': user.pk,
-        'message': 'User created successfully.'
     }, status=status_code)
 
 
 class UserProfileList(generics.ListCreateAPIView):
+    """List all user profiles or create a new one."""
+
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
 class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a single user profile."""
+
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
+
 class RegistrationView(APIView):
+    """Register a new user account and return an auth token."""
+
     permission_classes = [AllowAny]
 
     def post(self, request):
+        """Validate registration data, create user, and return token."""
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             account = serializer.save()
@@ -47,18 +54,19 @@ class RegistrationView(APIView):
 
 
 class LoginView(APIView):
+    """Authenticate a user by email and password and return an auth token."""
+
     permission_classes = [AllowAny]
 
     def post(self, request):
+        """Look up user by email, verify password, and return token."""
         email = request.data.get('email')
         password = request.data.get('password')
-
         try:
             user_obj = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({'error': 'E-Mail nicht gefunden.'}, status=400)
-
+            return Response({'error': 'Email not found.'}, status=400)
         user = authenticate(username=user_obj.username, password=password)
         if user:
             return build_auth_response(user, 200)
-        return Response({'error': 'Falsches Passwort.'}, status=400)
+        return Response({'error': 'Wrong password.'}, status=400)
