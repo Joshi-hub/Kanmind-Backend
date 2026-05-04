@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework import generics
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated 
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from ..models import UserProfile
@@ -15,26 +15,33 @@ def get_safe_fullname(user_obj):
     return name if ' ' in name else f"{name} {name}"
 
 
-def build_auth_response(user, status_code):
+def build_auth_response(user, status_code, message=None):
     """Build the standard authentication response with token and user data."""
     token, _ = Token.objects.get_or_create(user=user)
-    return Response({
+    
+    data = {
         'token': token.key,
         'fullname': get_safe_fullname(user),
         'email': user.email,
         'user_id': user.pk,
-    }, status=status_code)
+    }
+    if message:
+        data['message'] = message
+        
+    return Response(data, status=status_code)
 
 
 class UserProfileList(generics.ListCreateAPIView):
     """List all user profiles or create a new one."""
-
+    
+    permission_classes = [IsAuthenticated] 
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
 class UserProfileDetail(generics.RetrieveUpdateDestroyAPIView):
     """Retrieve, update, or delete a single user profile."""
 
+    permission_classes = [IsAuthenticated] 
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
@@ -49,7 +56,11 @@ class RegistrationView(APIView):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             account = serializer.save()
-            return build_auth_response(account, 201)
+            return build_auth_response(
+                account, 
+                201, 
+                message='User created successfully.'
+            )
         return Response(serializer.errors, status=400)
 
 

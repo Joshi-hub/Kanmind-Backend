@@ -4,10 +4,14 @@ class IsOwnerOrAdmin(permissions.BasePermission):
     """Allow write access only to the object owner or a superuser admin."""
  
     def has_object_permission(self, request, view, obj):
-        """Grant read access to all; write access only to owner or admin."""
-        
+        """Check if user is authenticated, then grant write access only to owner/admin."""
+        if not request.user or not request.user.is_authenticated:
+            return False
+            
         if request.method in permissions.SAFE_METHODS:
             return True
-        is_owner = obj.owner == request.user
-        is_admin = request.user and request.user.is_superuser
+            
+        is_owner = getattr(obj, 'owner', None) == request.user
+        is_admin = request.user.is_superuser
+        
         return is_owner or is_admin
