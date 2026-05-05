@@ -55,7 +55,7 @@ class BoardRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
                 raise PermissionDenied('You are not a member of this board.')
         return obj
 
-    def partial_update(self, request):
+    def partial_update(self, request, *args, **kwargs):
         """Update board title and/or members list, return owner_data and members_data."""
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
@@ -65,7 +65,7 @@ class BoardRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         if members_data is not None:
             instance.members.set(User.objects.filter(id__in=members_data))
             
-            instance.refresh_from_db()
+        instance.refresh_from_db()
         return Response(BoardPatchSerializer(instance).data)
 
 

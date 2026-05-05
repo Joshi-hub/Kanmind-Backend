@@ -1,5 +1,5 @@
 from rest_framework import permissions
-
+from rest_framework.exceptions import NotFound 
 
 class IsBoardMember(permissions.BasePermission):
     """Allow POST on /api/tasks/ only for members or owners of the target board."""
@@ -7,15 +7,15 @@ class IsBoardMember(permissions.BasePermission):
     def has_permission(self, request, view):
         """Return True if the user is a board member or owner."""
         if request.method in permissions.SAFE_METHODS:
-            return True
+            return True            
         board_id = request.data.get('board')
         if not board_id:
-            return False
+            return False            
         from boards_app.models import Board
         try:
             board = Board.objects.get(id=board_id)
         except Board.DoesNotExist:
-            return False
+            raise NotFound(detail="Board not found.")            
         return board.owner == request.user or board.members.filter(id=request.user.id).exists()
 
 
