@@ -50,7 +50,7 @@ class BoardSerializer(serializers.ModelSerializer):
     def get_member_count(self, obj):
         """Return total member count including the owner."""
 
-        return obj.members.count() + 1
+        return obj.members.count()
 
     def get_ticket_count(self, obj):
         """Return total number of tasks on this board."""
